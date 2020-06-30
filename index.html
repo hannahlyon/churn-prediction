@@ -3,12 +3,124 @@
   <head>
     <meta charset="utf-8">
     <title></title>
-    <script src="https://d3js.org/d3.v5.min.js"></script>
+
+    <style media="screen">
+
+
+
+    </style>
+
   </head>
 
   <body>
 
-    
+    <div id="graph-div">
+
+    </div>
+
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+
+    <script type="text/javascript">
+
+    var margin = {top: 10, right: 30, bottom: 30, left: 40},
+        width = 460 - margin.left - margin.right,
+        height = 400 - margin.top - margin.bottom;
+
+
+    var svg = d3.select("#graph-div")
+      .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform",
+              "translate(" + margin.left + "," + margin.top + ")");
+
+    d3.csv('telco2.csv')
+      .then(function(data) {
+        var x = d3.scaleLinear()
+            .domain([0, d3.max(data, function(d) { return 2 })])
+            .range([0, width]);
+        svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x));
+
+        // var y1 = d3.scaleLinear().range([height, 0]);
+
+        var histogram = d3.histogram()
+          .value(function(d) { return d.Churn; })   // I need to give the vector of value
+          .domain(x.domain())  // then the domain of the graphic
+          .thresholds(x.ticks(2))
+
+        var bins = histogram(data);
+
+        var y = d3.scaleLinear()
+            .range([height, 0]);
+            y.domain([0, d3.max(bins, function(d) { return d.length; })]);   // d3.hist has to be called before the Y axis obviously
+        svg.append("g")
+            .call(d3.axisLeft(y));
+
+
+
+
+
+            // Add a tooltip div. Here I define the general feature of the tooltip: stuff that do not depend on the data point.
+          // Its opacity is set to 0: we don't see it by default.
+          var tooltip = d3.select("#graph-div")
+            .append("div")
+            .style("opacity", 0)
+            .attr("class", "tooltip")
+            .style("background-color", "white")
+            .style("color", "#69b3a2")
+            .style("border-radius", "5px")
+            .style("padding", "10px")
+
+          // A function that change this tooltip when the user hover a point.
+          // Its opacity is set to 1: we can now see it. Plus it set the text and position of tooltip depending on the datapoint (d)
+          var showTooltip = function(d) {
+            tooltip
+              .transition()
+              .duration(100)
+              .style("opacity", 1)
+            tooltip
+              .html("Churn: ".concat('', d.x0) )
+              .style("left", (d3.mouse(this)[0]+40) + "px")
+              .style("top", (d3.mouse(this)[1]) + "px")
+          }
+          var moveTooltip = function(d) {
+            tooltip
+            .style("left", (d3.mouse(this)[0]+20) + "px")
+            .style("top", (d3.mouse(this)[1]) + "px")
+          }
+          // A function that change this tooltip when the leaves a point: just need to set opacity to 0 again
+          var hideTooltip = function(d) {
+            tooltip
+              .transition()
+              .duration(100)
+              .style("opacity", 0)
+          }
+
+        svg.selectAll("rect")
+          .data(bins)
+          .enter()
+          .append("rect")
+            .attr("x", 1)
+            .attr("transform", function(d) { return "translate(" + x(d.x0) + "," + y(d.length) + ")"; })
+            .attr("width", function(d) { return x(d.x1) - x(d.x0) - 5; })
+            .attr("height", function(d) { return height - y(d.length); })
+            .style("fill", "#69b3a2")
+            .on("mouseover", showTooltip )
+            .on("mousemove", moveTooltip )
+            .on("mouseleave", hideTooltip )
+
+      })
+      .catch(function(error){
+         console.log(error)
+      })
+
+
+
+    </script>
 
   </body>
+
 </html>
